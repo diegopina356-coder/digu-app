@@ -4,7 +4,10 @@
     "slug": "digu-app",
     "version": "1.0.0",
     "orientation": "portrait",
+    
+    // 👇 AQUÍ ESTÁ EL CAMBIO: Agregamos /images/ a la ruta
     "icon": "./assets/images/icon.png",
+    
     "scheme": "diguapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,6 +17,7 @@
     },
     "android": {
       "adaptiveIcon": {
+        // 👇 AQUÍ TAMBIÉN: Ruta hacia images
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
@@ -21,7 +25,13 @@
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
-      ]
+      ],
+      "config": {
+        // Si no tienes la API Key aún, deja esto vacío o borra estas 3 líneas de config
+        "googleMaps": {
+           "apiKey": "" 
+        }
+      }
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -34,7 +44,16 @@
           "locationAlwaysAndWhenInUsePermission": "Allow DIGU to use your location."
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#005A9C",
+          // 👇 Y AQUÍ TAMBIÉN
+          "image": "./assets/images/splash.png",
+          "imageWidth": 200
+        }
+      ]
     ]
   }
 }
