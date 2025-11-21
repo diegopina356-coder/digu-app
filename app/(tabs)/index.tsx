@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-// import MapView, { Marker, Polyline } from 'react-native-maps'; // <--- APAGADO PARA EVITAR CRASH EN APK
+// import MapView, { Marker, Polyline } from 'react-native-maps'; // <--- APAGADO MODO SEGURO
 import { Inter_400Regular, Inter_500Medium, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
@@ -18,9 +18,14 @@ import PantallaSoporte from '../../components/PantallaSoporte';
 
 // ⚙️ CONFIGURACIÓN
 const URL_SERVIDOR = 'https://digu-api.onrender.com'; 
-const TASA_BCV = 236.50; 
+// Nota: Ya no definimos TASA_BCV aquí como constante fija, la traeremos del servidor.
 
-// Configuración Notificaciones (Cliente)
+const LOS_PUERTOS_CENTRO = {
+  latitude: 10.6440, longitude: -71.5350,
+  latitudeDelta: 0.03, longitudeDelta: 0.03,
+};
+
+// Configuración Notificaciones
 Notifications.setNotificationHandler({
   handleNotification: async () => ({ shouldShowAlert: true, shouldPlaySound: true, shouldSetBadge: false }),
 });
@@ -55,16 +60,35 @@ const MapaPrincipal = ({ usuarioLogueado, socket, cerrarSesion, irAHistorial, ir
   const [comentario, setComentario] = useState('');
   const [estadoViajeTexto, setEstadoViajeTexto] = useState("Tu conductor está en camino!");
 
-  // Simulación de precio (Ya que no hay mapa activo)
+  // --- ¡NUEVO! ESTADO PARA LA TASA DEL DÓLAR ---
+  const [tasaBCV, setTasaBCV] = useState(0); 
+
+  // Simulación de precio (Ya que no hay mapa activo para calcular KM exactos)
+  // Si tuvieras el mapa activo, usarías la función calcularDistanciaReal
   const precioEstimado = tipoVehiculo === 'carro' ? 3.00 : 1.50;
 
+  // 1. AL CARGAR: Pedir GPS y TASA DEL DÓLAR
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') return;
       let location = await Location.getCurrentPositionAsync({});
       setMiUbicacion(location.coords);
-      await Notifications.requestPermissionsAsync(); // Pedir permisos
+      await Notifications.requestPermissionsAsync();
+
+      // --- TRAER LA TASA DEL SERVIDOR ---
+      try {
+        const res = await fetch(`${URL_SERVIDOR}/config/tasa`);
+        const data = await res.json();
+        if (data.tasaDolar) {
+            setTasaBCV(data.tasaDolar);
+            console.log("💰 Tasa actualizada:", data.tasaDolar);
+        }
+      } catch (error) {
+        console.log("Error cargando tasa, usando respaldo.");
+        setTasaBCV(240.00); // Valor de respaldo por si falla internet
+      }
+      // ----------------------------------
     })();
 
     if (socket) {
@@ -139,12 +163,12 @@ const MapaPrincipal = ({ usuarioLogueado, socket, cerrarSesion, irAHistorial, ir
       <View style={styles.mapaPlaceholder}>
         <Ionicons name="map" size={80} color={Colores.textSecondary} />
         <Text style={{color:Colores.textSecondary, marginTop:10}}>Mapa en Mantenimiento</Text>
-        <Text style={{color:Colores.textSecondary, fontSize: 10}}>Configuración de API Key pendiente</Text>
+        <Text style={{color:Colores.textSecondary, fontSize: 10}}>Tasa del Día: {tasaBCV.toFixed(2)} Bs/$</Text>
       </View>
 
       {!calificando && (
         <>
-          {/* Botón Modo Conductor (Visible para CONDUCTOR y ADMIN) */}
+          {/* Botón Modo Conductor */}
           {(usuarioLogueado.rol === 'CONDUCTOR' || usuarioLogueado.rol === 'ADMIN') && (
             <TouchableOpacity style={styles.botonFlotanteDerecha} onPress={() => setModoConductor(true)}>
               <Ionicons name="car-sport" size={24} color={Colores.darkBlue} />
@@ -182,7 +206,13 @@ const MapaPrincipal = ({ usuarioLogueado, socket, cerrarSesion, irAHistorial, ir
             <TouchableOpacity style={[styles.opcionPago, metodoPago === 'efectivo' && styles.pagoActivo]} onPress={() => setMetodoPago('efectivo')}><Ionicons name="cash-outline" size={24} color={metodoPago === 'efectivo' ? 'white' : Colores.darkBlue} /><Text style={[styles.textoPago, metodoPago === 'efectivo' && {color: 'white'}]}>Efectivo ($)</Text></TouchableOpacity>
             <TouchableOpacity style={[styles.opcionPago, metodoPago === 'pagomovil' && styles.pagoActivo]} onPress={() => setMetodoPago('pagomovil')}><Ionicons name="phone-portrait-outline" size={24} color={metodoPago === 'pagomovil' ? 'white' : Colores.darkBlue} /><Text style={[styles.textoPago, metodoPago === 'pagomovil' && {color: 'white'}]}>Pago Móvil (Bs)</Text></TouchableOpacity>
           </View>
-          {metodoPago === 'pagomovil' && (<View style={styles.cajaPagoMovil}><Text style={styles.textoPagoMovilLabel}>Monto a transferir (Tasa {TASA_BCV}):</Text><Text style={styles.textoPagoMovilMonto}>Bs {(precioEstimado * TASA_BCV).toFixed(2)}</Text></View>)}
+          {metodoPago === 'pagomovil' && (
+            <View style={styles.cajaPagoMovil}>
+               <Text style={styles.textoPagoMovilLabel}>Monto a transferir (Tasa {tasaBCV.toFixed(2)}):</Text>
+               {/* AQUI USAMOS LA TASA DINÁMICA */}
+               <Text style={styles.textoPagoMovilMonto}>Bs {(precioEstimado * tasaBCV).toFixed(2)}</Text>
+            </View>
+          )}
           <TouchableOpacity style={styles.botonConfirmar} onPress={confirmarViaje} disabled={cargandoViaje}>{cargandoViaje ? <ActivityIndicator color="white" /> : <Text style={styles.textoBoton}>CONFIRMAR {tipoVehiculo.toUpperCase()}</Text>}</TouchableOpacity>
         </View>
       )}
@@ -203,7 +233,7 @@ const MapaPrincipal = ({ usuarioLogueado, socket, cerrarSesion, irAHistorial, ir
           <View style={styles.estrellasContainer}>
             {[1, 2, 3, 4, 5].map((star) => (<TouchableOpacity key={star} onPress={() => setEstrellas(star)}><Ionicons name={star <= estrellas ? "star" : "star-outline"} size={40} color={Colores.star} style={{ marginHorizontal: 5 }} /></TouchableOpacity>))}
           </View>
-          <TextInput style={styles.inputComentario} placeholder="Añade un comentario..." onChangeText={setComentario} value={comentario} multiline={true} />
+          <TextInput style={styles.inputComentario} placeholder="Añade un comentario (opcional)" onChangeText={setComentario} value={comentario} multiline={true} />
           <TouchableOpacity style={styles.botonEnviarCalificacion} onPress={enviarCalificacion} disabled={estrellas === 0}><Text style={styles.textoBoton}>ENVIAR</Text></TouchableOpacity>
         </View>
       )}
@@ -221,7 +251,6 @@ export default function AppController() {
 
   const handleLogout = () => { setDatosSesion(null); if (socket) socket.disconnect(); setSocket(null); setPantallaActual('login'); Alert.alert("Sesión Cerrada", "Has salido de DIGU."); };
   const alHacerLogin = (token, usuario) => {
-    // ADMIN PERMITIDO
     if (usuario.rol !== 'CLIENTE' && usuario.rol !== 'CONDUCTOR' && usuario.rol !== 'ADMIN') { Alert.alert("Acceso Denegado", "Tu solicitud está siendo revisada."); return; }
     setDatosSesion({ token, usuario }); const newSocket = io(URL_SERVIDOR); setSocket(newSocket); setPantallaActual('mapa');
   };

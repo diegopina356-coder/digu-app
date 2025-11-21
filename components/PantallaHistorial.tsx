@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // ⚠️ ¡VERIFICA TU IP!
 const TU_IP = '192.168.1.127'; // O usa la URL de Render si vas a generar APK
 const URL_BASE = 'https://digu-api.onrender.com'; 
-const TASA_BCV = 236.50;
+const TASA_BCV = 242.50;
 
 const Colores = {
   primary: '#005A9C',
