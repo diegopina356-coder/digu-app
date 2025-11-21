@@ -1,9 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
-const TU_IP = '192.168.1.127'; 
-const URL_BASE = 'https://digu-api.onrender.com'; // URL DE NUBE
+// ⚠️ ¡VERIFICA TU IP!
+const TU_IP = '192.168.1.127'; // O usa la URL de Render si vas a generar APK
+const URL_BASE = 'https://digu-api.onrender.com'; 
 const TASA_BCV = 236.50;
 
 const Colores = {
@@ -21,6 +22,11 @@ export default function PantallaHistorial({ usuario, volver }) {
   const [viajes, setViajes] = useState([]);
   const [deudaActual, setDeudaActual] = useState(0);
   const [loading, setLoading] = useState(true);
+  
+  // Estadísticas para conductor
+  const [totalBruto, setTotalBruto] = useState(0);
+  const [comision, setComision] = useState(0);
+  const [gananciaNeta, setGananciaNeta] = useState(0);
 
   useEffect(() => {
     cargarDatos();
@@ -31,9 +37,22 @@ export default function PantallaHistorial({ usuario, volver }) {
       const respuesta = await fetch(`${URL_BASE}/historial/${usuario.id}`);
       const data = await respuesta.json();
       
-      // Ahora el servidor manda un objeto { viajes: [], saldoActual: 0 }
       setViajes(data.viajes);
       setDeudaActual(data.saldoActual);
+
+      // Cálculos visuales para el conductor
+      if (usuario.rol === 'CONDUCTOR') {
+        let bruto = 0;
+        data.viajes.forEach(v => {
+            if(v.conductorId === usuario.id) bruto += v.precio;
+        });
+        const comisionApp = bruto * 0.25; 
+        const neta = bruto - comisionApp;
+
+        setTotalBruto(bruto);
+        setComision(comisionApp);
+        setGananciaNeta(neta);
+      }
 
     } catch (error) {
       Alert.alert("Error", "No se pudo cargar la información.");
@@ -51,7 +70,9 @@ export default function PantallaHistorial({ usuario, volver }) {
       <View style={styles.tarjeta}>
         <View style={styles.headerTarjeta}>
           <Text style={styles.fecha}>{fecha} - {hora}</Text>
-          <Text style={styles.precio}>${item.precio.toFixed(2)}</Text>
+          <Text style={styles.precio}>
+             {esConductor ? `+ $${(item.precio * 0.75).toFixed(2)}` : `$${item.precio.toFixed(2)}`}
+          </Text>
         </View>
 
         <View style={styles.rutaContainer}>
@@ -97,7 +118,10 @@ export default function PantallaHistorial({ usuario, volver }) {
                 <Text style={styles.textoBotonPago}>REPORTAR PAGO</Text>
             </TouchableOpacity>
             
-            <Text style={styles.notaDeuda}>Se te bloqueará si superas los $20 de deuda.</Text>
+            {/* CAMBIO AQUÍ: TEXTO DE AVISO */}
+            <Text style={styles.notaDeuda}>
+              <Ionicons name="calendar-outline" size={12} /> Corte Administrativo: Todos los Sábados.
+            </Text>
         </View>
       )}
 
@@ -134,11 +158,11 @@ const styles = StyleSheet.create({
   rolTexto: { fontSize: 12, color: Colores.textLight },
 
   // Panel Deuda
-  panelDeuda: { margin: 20, marginBottom: 5, padding: 20, backgroundColor: Colores.white, borderRadius: 20, elevation: 5, alignItems: 'center', borderLeftWidth: 5, borderLeftColor: Colores.red },
-  tituloDeuda: { fontWeight: 'bold', color: Colores.red, marginBottom: 5, fontSize: 14 },
+  panelDeuda: { margin: 20, marginBottom: 5, padding: 20, backgroundColor: Colores.white, borderRadius: 20, elevation: 5, alignItems: 'center', borderLeftWidth: 5, borderLeftColor: Colores.orange },
+  tituloDeuda: { fontWeight: 'bold', color: Colores.orange, marginBottom: 5, fontSize: 14 },
   montoDeuda: { fontSize: 32, fontWeight: 'bold', color: Colores.text },
   montoDeudaBs: { fontSize: 16, color: Colores.textLight, marginBottom: 15 },
   botonReportarPago: { backgroundColor: Colores.primary, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 20 },
   textoBotonPago: { color: Colores.white, fontWeight: 'bold', fontSize: 12 },
-  notaDeuda: { marginTop: 10, fontSize: 10, color: Colores.textLight, fontStyle: 'italic' }
+  notaDeuda: { marginTop: 15, fontSize: 12, color: Colores.textLight, fontStyle: 'italic' }
 });
