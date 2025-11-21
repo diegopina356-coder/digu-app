@@ -2,18 +2,17 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-// ☁️ CONEXIÓN A LA NUBE
+// ⚠️ ¡VERIFICA TU IP!
 const URL_SOLICITUD = 'https://digu-api.onrender.com/solicitud-conductor';
 
-// ⚠️ ¡PON TU NÚMERO AQUÍ! (Formato internacional sin el +)
-const WHATSAPP_ADMIN = '584120000000'; 
+// ⚠️ ¡PON TU NÚMERO AQUÍ! 
+const WHATSAPP_ADMIN = '584141666779'; 
 
-// Paleta DIGU
 const Colores = {
   primary: '#005A9C',
   background: '#F5F7FA',
   text: '#1E1E1E',
-  textSecondary: '#7F8C8D',
+  textSecondary: '#3b4344ff', // Gris para placeholders
   white: '#FFFFFF',
   success: '#27ae60',
   border: '#EAEAEA'
@@ -48,15 +47,13 @@ export default function PantallaSolicitudConductor({ volver }) {
       if (respuesta.ok) {
         Alert.alert(
           '¡Solicitud Recibida!',
-          'Tus datos han sido guardados. Ahora serás redirigido al WhatsApp de la administración.',
-          [
-            { text: 'Ir a WhatsApp', onPress: () => {
-              const mensaje = `Hola Diego, soy ${nombre} (C.I: ${cedula}). Acabo de registrar mi ${modelo} placa ${placa} en la app DIGU. Aquí envío mis documentos.`;
+          'Tus datos han sido guardados. Serás redirigido a WhatsApp.',
+          [{ text: 'Ir a WhatsApp', onPress: () => {
+              const mensaje = `Hola Diego, soy ${nombre} (C.I: ${cedula}). Quiero ser conductor de DIGU. Mi vehículo es: ${modelo} (${placa}).`;
               const url = `https://wa.me/${WHATSAPP_ADMIN}?text=${encodeURIComponent(mensaje)}`;
               Linking.openURL(url);
               volver();
-            }}
-          ]
+            }}]
         );
       } else {
         Alert.alert('Error', data.error || 'No se pudo enviar la solicitud.');
@@ -80,43 +77,36 @@ export default function PantallaSolicitudConductor({ volver }) {
       <Text style={styles.subtitulo}>Registro de Conductores</Text>
 
       <Text style={styles.sectionTitle}>Datos Personales</Text>
-      <TextInput style={styles.input} placeholder="Nombre Completo" value={nombre} onChangeText={setNombre} />
-      <TextInput style={styles.input} placeholder="Correo Electrónico" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
+      {/* AQUI ESTÁ EL ARREGLO: placeholderTextColor */}
+      <TextInput style={styles.input} placeholder="Nombre Completo" placeholderTextColor={Colores.textSecondary} value={nombre} onChangeText={setNombre} />
+      <TextInput style={styles.input} placeholder="Correo Electrónico" placeholderTextColor={Colores.textSecondary} keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
       <View style={styles.row}>
-        <TextInput style={[styles.input, {flex: 1, marginRight: 5}]} placeholder="Cédula" value={cedula} onChangeText={setCedula} />
-        <TextInput style={[styles.input, {flex: 1, marginLeft: 5}]} placeholder="Teléfono" keyboardType="phone-pad" value={telefono} onChangeText={setTelefono} />
+        <TextInput style={[styles.input, {flex: 1, marginRight: 5}]} placeholder="Cédula" placeholderTextColor={Colores.textSecondary} value={cedula} onChangeText={setCedula} />
+        <TextInput style={[styles.input, {flex: 1, marginLeft: 5}]} placeholder="Teléfono" placeholderTextColor={Colores.textSecondary} keyboardType="phone-pad" value={telefono} onChangeText={setTelefono} />
       </View>
-      <TextInput style={styles.input} placeholder="Crea una Contraseña" secureTextEntry={true} value={password} onChangeText={setPassword} />
+      <TextInput style={styles.input} placeholder="Crea una Contraseña" placeholderTextColor={Colores.textSecondary} secureTextEntry={true} value={password} onChangeText={setPassword} />
       
       <View style={styles.separador} />
 
       <Text style={styles.sectionTitle}>Datos del Vehículo</Text>
-      <TextInput style={styles.input} placeholder="Modelo (Ej: Bera SBR / Toyota Corolla)" value={modelo} onChangeText={setModelo} />
+      <TextInput style={styles.input} placeholder="Modelo (Ej: Toyota Corolla)" placeholderTextColor={Colores.textSecondary} value={modelo} onChangeText={setModelo} />
       <View style={styles.row}>
-        <TextInput style={[styles.input, {flex: 1, marginRight: 5}]} placeholder="Placa" autoCapitalize="characters" value={placa} onChangeText={setPlaca} />
-        <TextInput style={[styles.input, {flex: 1, marginLeft: 5}]} placeholder="Año" keyboardType="number-pad" value={ano} onChangeText={setAno} />
+        <TextInput style={[styles.input, {flex: 1, marginRight: 5}]} placeholder="Placa" placeholderTextColor={Colores.textSecondary} autoCapitalize="characters" value={placa} onChangeText={setPlaca} />
+        <TextInput style={[styles.input, {flex: 1, marginLeft: 5}]} placeholder="Año" placeholderTextColor={Colores.textSecondary} keyboardType="number-pad" value={ano} onChangeText={setAno} />
       </View>
 
-      <TouchableOpacity 
-        style={styles.botonRegistrar} 
-        onPress={handleSolicitud} 
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color={Colores.white} />
-        ) : (
-          <Text style={styles.textoBoton}>ENVIAR SOLICITUD</Text>
-        )}
+      <TouchableOpacity style={styles.botonRegistrar} onPress={handleSolicitud} disabled={loading}>
+        {loading ? <ActivityIndicator color={Colores.white} /> : <Text style={styles.textoBoton}>ENVIAR SOLICITUD</Text>}
       </TouchableOpacity>
       
-      <Text style={styles.notaPie}>* Al enviar, deberás contactar al administrador para activar tu cuenta.</Text>
+      <Text style={styles.notaPie}>* Al enviar, deberás contactar al administrador.</Text>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colores.background },
-  scrollContent: { padding: 25, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 50 },
+  scrollContent: { padding: 25, paddingTop: Platform.OS === 'ios' ? 70 : 40, paddingBottom: 50 },
   header: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   botonVolver: { marginRight: 15 },
   titulo: { fontSize: 28, fontFamily: 'Inter-Bold', color: Colores.text },

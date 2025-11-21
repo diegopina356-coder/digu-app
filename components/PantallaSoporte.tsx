@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 // ⚠️ TU NÚMERO DE SOPORTE (Formato internacional)
-const WHATSAPP_SOPORTE = '584120000000'; 
+const WHATSAPP_SOPORTE = '584141666779'; 
 
 const Colores = {
   primary: '#005A9C',
