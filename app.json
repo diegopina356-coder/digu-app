@@ -8,13 +8,11 @@
     "scheme": "diguapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "cover",
       "backgroundColor": "#005A9C"
     },
-    
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.digu.app"
@@ -29,12 +27,19 @@
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
       ],
       "config": {
         "googleMaps": {
           "apiKey": ""
         }
+      },
+      "runtimeVersion": {
+        "policy": "appVersion"
       }
     },
     "web": {
@@ -56,6 +61,9 @@
       "eas": {
         "projectId": "6bf0d9cb-2e7f-4877-bcf9-bfb1168f7a6e"
       }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/6bf0d9cb-2e7f-4877-bcf9-bfb1168f7a6e"
     }
   }
 }
