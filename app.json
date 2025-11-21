@@ -4,32 +4,36 @@
     "slug": "digu-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    
-    // 👇 AQUÍ ESTÁ EL CAMBIO: Agregamos /images/ a la ruta
     "icon": "./assets/images/icon.png",
-    
     "scheme": "diguapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#005A9C"
+    },
+    
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.digu.app"
     },
     "android": {
       "adaptiveIcon": {
-        // 👇 AQUÍ TAMBIÉN: Ruta hacia images
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.digu.app",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ],
       "config": {
-        // Si no tienes la API Key aún, deja esto vacío o borra estas 3 líneas de config
         "googleMaps": {
-           "apiKey": "" 
+          "apiKey": ""
         }
       }
     },
@@ -45,15 +49,13 @@
         }
       ],
       "expo-font",
-      [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#005A9C",
-          // 👇 Y AQUÍ TAMBIÉN
-          "image": "./assets/images/splash.png",
-          "imageWidth": 200
-        }
-      ]
-    ]
+      "expo-splash-screen"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "6bf0d9cb-2e7f-4877-bcf9-bfb1168f7a6e"
+      }
+    }
   }
 }
