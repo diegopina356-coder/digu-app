@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-// import MapView from 'react-native-maps'; // <--- APAGADO POR MODO SEGURO
+// import MapView, { Marker, Polyline } from 'react-native-maps'; // <--- APAGADO PARA EVITAR CRASH EN APK
 import { Inter_400Regular, Inter_500Medium, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import * as Notifications from 'expo-notifications'; // Notificaciones
+import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
 import io from 'socket.io-client';
 
+// Componentes
 import PantallaConductor from '../../components/PantallaConductor';
 import PantallaHistorial from '../../components/PantallaHistorial';
 import PantallaLogin from '../../components/PantallaLogin';
@@ -15,18 +16,25 @@ import PantallaRegistro from '../../components/PantallaRegistro';
 import PantallaSolicitudConductor from '../../components/PantallaSolicitudConductor';
 import PantallaSoporte from '../../components/PantallaSoporte';
 
-// Configuración
+// ⚙️ CONFIGURACIÓN
 const URL_SERVIDOR = 'https://digu-api.onrender.com'; 
 const TASA_BCV = 236.50; 
-const LOS_PUERTOS_CENTRO = { latitude: 10.6440, longitude: -71.5350, latitudeDelta: 0.03, longitudeDelta: 0.03 };
 
-// Configuración Notificaciones
+// Configuración Notificaciones (Cliente)
 Notifications.setNotificationHandler({
   handleNotification: async () => ({ shouldShowAlert: true, shouldPlaySound: true, shouldSetBadge: false }),
 });
 
-const Colores = { primary: '#005A9C', green: '#27ae60', text: '#1E1E1E', textSecondary: '#7F8C8D', background: '#F5F7FA', white: '#FFFFFF', darkBlue: '#2c3e50', whatsApp: '#25D366', star: '#F1C40F', red: '#c0392b', orange: '#F39C12' };
+// Paleta DIGU
+const Colores = {
+  primary: '#005A9C', green: '#27ae60', text: '#1E1E1E', textSecondary: '#7F8C8D',
+  background: '#F5F7FA', white: '#FFFFFF', darkBlue: '#2c3e50', whatsApp: '#25D366',
+  star: '#F1C40F', red: '#c0392b', orange: '#F39C12'
+};
 
+// ==============================================================
+// 📍 COMPONENTE DEL MAPA (CLIENTE)
+// ==============================================================
 const MapaPrincipal = ({ usuarioLogueado, socket, cerrarSesion, irAHistorial, irASoporte }) => {
   const [modoConductor, setModoConductor] = useState(false);
   const [miUbicacion, setMiUbicacion] = useState(null);
@@ -36,15 +44,18 @@ const MapaPrincipal = ({ usuarioLogueado, socket, cerrarSesion, irAHistorial, ir
   const [tipoVehiculo, setTipoVehiculo] = useState('carro');
   const [metodoPago, setMetodoPago] = useState('efectivo');
   const [cargandoViaje, setCargandoViaje] = useState(false);
+  
   const [miSocketId, setMiSocketId] = useState(socket ? socket.id : null);
   const [conductor, setConductor] = useState(null); 
   const [telefonoConductor, setTelefonoConductor] = useState(null);
+  
   const [calificando, setCalificando] = useState(false);
   const [estrellas, setEstrellas] = useState(0);
   const [viajeIdActual, setViajeIdActual] = useState(null);
   const [comentario, setComentario] = useState('');
   const [estadoViajeTexto, setEstadoViajeTexto] = useState("Tu conductor está en camino!");
 
+  // Simulación de precio (Ya que no hay mapa activo)
   const precioEstimado = tipoVehiculo === 'carro' ? 3.00 : 1.50;
 
   useEffect(() => {
@@ -53,7 +64,7 @@ const MapaPrincipal = ({ usuarioLogueado, socket, cerrarSesion, irAHistorial, ir
       if (status !== 'granted') return;
       let location = await Location.getCurrentPositionAsync({});
       setMiUbicacion(location.coords);
-      const { status: notifStatus } = await Notifications.requestPermissionsAsync();
+      await Notifications.requestPermissionsAsync(); // Pedir permisos
     })();
 
     if (socket) {
@@ -61,9 +72,11 @@ const MapaPrincipal = ({ usuarioLogueado, socket, cerrarSesion, irAHistorial, ir
       socket.on('connect', () => { setMiSocketId(socket.id); });
       
       socket.on('viaje-confirmado', (info) => {
-        // Notificación al cliente
         Notifications.scheduleNotificationAsync({ content: { title: "🚖 ¡Viaje Aceptado!", body: `${info.nombre} viene en camino.` }, trigger: null });
-        setConductor(info); setTelefonoConductor(info.telefono); setEstadoViajeTexto("Tu conductor está en camino!");
+        Alert.alert("¡Viaje Aceptado!", `${info.nombre} está en camino.`);
+        setConductor(info);
+        setTelefonoConductor(info.telefono);
+        setEstadoViajeTexto("Tu conductor está en camino!");
       });
 
       socket.on('viaje-iniciado-cliente', () => {
@@ -71,11 +84,17 @@ const MapaPrincipal = ({ usuarioLogueado, socket, cerrarSesion, irAHistorial, ir
       });
       
       socket.on('viaje-terminado', (datos) => {
-        setConductor(null); setViajeIdActual(datos.viajeId); setCalificando(true);
+        setConductor(null);
+        setViajeIdActual(datos.viajeId);
+        setCalificando(true);
       });
     }
     return () => {
-      if (socket) { socket.off('viaje-confirmado'); socket.off('viaje-iniciado-cliente'); socket.off('viaje-terminado'); }
+      if (socket) {
+        socket.off('viaje-confirmado');
+        socket.off('viaje-iniciado-cliente');
+        socket.off('viaje-terminado');
+      }
     }
   }, [socket, miSocketId]);
 
@@ -104,7 +123,10 @@ const MapaPrincipal = ({ usuarioLogueado, socket, cerrarSesion, irAHistorial, ir
   const enviarCalificacion = async () => {
     if (estrellas === 0) { Alert.alert("Error", "Selecciona estrellas."); return; }
     if (!viajeIdActual) return;
-    try { await fetch(`${URL_SERVIDOR}/viaje/calificar`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ viajeId: viajeIdActual, estrellas, comentario }) }); Alert.alert("¡Gracias!", `Has calificado con ${estrellas} estrellas.`); } catch (error) { Alert.alert("Error", "No se pudo enviar."); }
+    try {
+      await fetch(`${URL_SERVIDOR}/viaje/calificar`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ viajeId: viajeIdActual, estrellas, comentario }) });
+      Alert.alert("¡Gracias!", `Has calificado con ${estrellas} estrellas.`);
+    } catch (error) { Alert.alert("Error", "No se pudo enviar."); }
     setCalificando(false); setTextoDestino(""); setEstrellas(0); setComentario(""); setViajeIdActual(null);
   };
 
@@ -122,7 +144,7 @@ const MapaPrincipal = ({ usuarioLogueado, socket, cerrarSesion, irAHistorial, ir
 
       {!calificando && (
         <>
-          {/* BOTÓN MODO CONDUCTOR (Visible para CONDUCTOR y ADMIN) */}
+          {/* Botón Modo Conductor (Visible para CONDUCTOR y ADMIN) */}
           {(usuarioLogueado.rol === 'CONDUCTOR' || usuarioLogueado.rol === 'ADMIN') && (
             <TouchableOpacity style={styles.botonFlotanteDerecha} onPress={() => setModoConductor(true)}>
               <Ionicons name="car-sport" size={24} color={Colores.darkBlue} />
@@ -199,7 +221,7 @@ export default function AppController() {
 
   const handleLogout = () => { setDatosSesion(null); if (socket) socket.disconnect(); setSocket(null); setPantallaActual('login'); Alert.alert("Sesión Cerrada", "Has salido de DIGU."); };
   const alHacerLogin = (token, usuario) => {
-    // ¡CORRECCIÓN ADMIN!
+    // ADMIN PERMITIDO
     if (usuario.rol !== 'CLIENTE' && usuario.rol !== 'CONDUCTOR' && usuario.rol !== 'ADMIN') { Alert.alert("Acceso Denegado", "Tu solicitud está siendo revisada."); return; }
     setDatosSesion({ token, usuario }); const newSocket = io(URL_SERVIDOR); setSocket(newSocket); setPantallaActual('mapa');
   };
